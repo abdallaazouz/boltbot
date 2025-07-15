@@ -1091,8 +1091,8 @@ export const translations = {
 
   // Bot Messages (updated with new format)
   taskAvailable: {
-    ar: '📌 مهمة جديدة متاحة:\n\n🔧 {title}\n📝 {description}\n\n💰 التكلفة المتوقعة: {cost} ريال\n📅 تاريخ البداية: {startDate}\n⏰ تاريخ الانتهاء: {endDate}\n\n📝 للموافقة على المهمة، اكتب:\nمقبولة\n\n📝 Zur Bestätigung des Auftrags, schreibe:\nAngenommen\n\n❌ للرفض، اكتب:\nغير متاح الآن\n\n❌ Zur Ablehnung, schreibe:\nZurzeit nicht verfügbar',
-    de: '📌 Neue Aufgabe verfügbar:\n\n🔧 {title}\n📝 {description}\n\n💰 Erwartete Kosten: {cost} Riyal\n📅 Startdatum: {startDate}\n⏰ Enddatum: {endDate}\n\n📝 Zur Bestätigung des Auftrags, schreibe:\nAngenommen\n\n📝 للموافقة على المهمة، اكتب:\nمقبولة\n\n❌ Zur Ablehnung, schreibe:\nZurzeit nicht verfügbar\n\n❌ للرفض، اكتب:\nغير متاح الآن'
+    ar: '📌 مهمة جديدة متاحة:\n\n🔧 {title}\n📝 {description}\n\n💰 التكلفة المتوقعة: {cost} ريال\n📅 تاريخ البداية: {startDate}\n⏰ تاريخ الانتهاء: {endDate}\n\nهل تريد قبول هذه المهمة؟',
+    de: '📌 Neue Aufgabe verfügbar:\n\n🔧 {title}\n📝 {description}\n\n💰 Erwartete Kosten: {cost} Riyal\n📅 Startdatum: {startDate}\n⏰ Enddatum: {endDate}\n\nMöchten Sie diese Aufgabe annehmen?'
   },
   taskAcceptedMessage: {
     ar: '✅ رائع! تم قبول المهمة بنجاح\n\n🔧 {title}\n💰 التكلفة: {cost} ريال\n\n📍 سيتم إرسال موقع المهمة قريباً من الإدارة.',
@@ -1107,12 +1107,12 @@ export const translations = {
     de: '📍 Aufgabenstandort\n\n🔧 {title}\n📍 Geografischer Standort:\n{location}\n\n💡 Klicken Sie auf den Link, um den Standort in Google Maps zu öffnen.\n\n🚀 Viel Erfolg bei der Aufgabe!'
   },
   welcomeMessage: {
-    ar: '🎉 أهلاً وسهلاً {name}!\n\n✅ تم تسجيلك بنجاح كفني في نظام إدارة المهام.\n\n🔧 ستصلك المهام الجديدة هنا مباشرة!\n\n📝 للموافقة على أي مهمة، اكتب:\nمقبولة\n\n📝 Zur Bestätigung des Auftrags, schreibe:\nAngenommen\n\n❌ للرفض، اكتب:\nغير متاح الآن\n\n❌ Zur Ablehnung, schreibe:\nZurzeit nicht verfügbar',
-    de: '🎉 Willkommen {name}!\n\n✅ Sie wurden erfolgreich als Techniker im Aufgabenverwaltungssystem registriert.\n\n🔧 Neue Aufgaben werden direkt hier gesendet!\n\n📝 Zur Bestätigung des Auftrags, schreibe:\nAngenommen\n\n📝 للموافقة على أي مهمة، اكتب:\nمقبولة\n\n❌ Zur Ablehnung, schreibe:\nZurzeit nicht verfügbar\n\n❌ للرفض، اكتب:\nغير متاح الآن'
+    ar: '🎉 أهلاً وسهلاً {name}!\n\n✅ تم تسجيلك بنجاح كفني في نظام إدارة المهام.\n\n🔧 ستصلك المهام الجديدة هنا مباشرة مع أزرار للموافقة أو الرفض!\n\n💡 ما عليك سوى الضغط على الأزرار للرد على المهام.',
+    de: '🎉 Willkommen {name}!\n\n✅ Sie wurden erfolgreich als Techniker im Aufgabenverwaltungssystem registriert.\n\n🔧 Neue Aufgaben werden direkt hier mit Schaltflächen zum Annehmen oder Ablehnen gesendet!\n\n💡 Klicken Sie einfach auf die Schaltflächen, um auf Aufgaben zu antworten.'
   },
   welcomeBackMessage: {
-    ar: '👋 مرحباً بعودتك {name}!\n\n✅ أنت مسجل بالفعل في النظام\n\n📝 للموافقة على أي مهمة، اكتب:\nمقبولة\n\n📝 Zur Bestätigung des Auftrags, schreibe:\nAngenommen\n\n❌ للرفض، اكتب:\nغير متاح الآن\n\n❌ Zur Ablehnung, schreibe:\nZurzeit nicht verfügbar',
-    de: '👋 Willkommen zurück {name}!\n\n✅ Sie wurden bereits erfolgreich im System registriert\n\n📝 Zur Bestätigung des Auftrags, schreibe:\nAngenommen\n\n📝 للموافقة على أي مهمة، اكتب:\nمقبولة\n\n❌ Zur Ablehnung, schreibe:\nZurzeit nicht verfügbar\n\n❌ للرفض، اكتب:\nغير متاح الآن'
+    ar: '👋 مرحباً بعودتك {name}!\n\n✅ أنت مسجل بالفعل في النظام\n\n🔧 ستصلك المهام الجديدة مع أزرار للموافقة أو الرفض!\n\n💡 ما عليك سوى الضغط على الأزرار للرد على المهام.',
+    de: '👋 Willkommen zurück {name}!\n\n✅ Sie wurden bereits erfolgreich im System registriert\n\n🔧 Neue Aufgaben werden mit Schaltflächen zum Annehmen oder Ablehnen gesendet!\n\n💡 Klicken Sie einfach auf die Schaltflächen, um auf Aufgaben zu antworten.'
   }
 };
 

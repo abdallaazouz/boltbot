@@ -211,34 +211,68 @@ catch (error) {
 
 
 const handleTelegramCallbackQuery = async (callbackQuery: any) => {
-console.log("📥 استقبلت callback_query!", callbackQuery);
+  console.log("📥 استقبلت callback_query!", callbackQuery);
   const userId = callbackQuery.from.id.toString();
   const data = callbackQuery.data; // قيمة callback_data من الزر
   const chatId = callbackQuery.message.chat.id;
+  
+  console.log(`👤 المستخدم: ${userId}, البيانات: ${data}`);
 
   // قبول المهمة
   if (data.startsWith('accept_task_')) {
+    const [, , taskId, technicianId] = data.split('_');
+    console.log(`✅ محاولة قبول المهمة ${taskId} من الفني ${technicianId}`);
+    
     const subscriber = subscribers.find(s => s.userId === userId);
     if (subscriber) {
+      console.log(`👤 تم العثور على الفني: ${subscriber.firstName}`);
       await handleTaskAcceptance(subscriber);
 
-      // رد سريع على الزر (اختياري)
+      // رد سريع على الزر
       await sendAnswerCallbackQuery(callbackQuery.id, 'تم قبول المهمة ✅');
+      
+      // إشعار للإدارة
+      addNotification({
+        type: 'task_accepted',
+        title: '✅ تم قبول المهمة',
+        message: `قبل ${subscriber.firstName} ${subscriber.lastName || ''} المهمة`,
+        userId: subscriber.id
+      });
+    } else {
+      console.log(`⚠️ لم يتم العثور على الفني ${userId}`);
+      await sendAnswerCallbackQuery(callbackQuery.id, 'خطأ: لم يتم العثور على بياناتك');
     }
 
   // رفض المهمة
   } else if (data.startsWith('reject_task_')) {
+    const [, , taskId, technicianId] = data.split('_');
+    console.log(`❌ محاولة رفض المهمة ${taskId} من الفني ${technicianId}`);
+    
     const subscriber = subscribers.find(s => s.userId === userId);
     if (subscriber) {
+      console.log(`👤 تم العثور على الفني: ${subscriber.firstName}`);
       await handleTaskRejection(subscriber);
 
-      // رد سريع على الزر (اختياري)
+      // رد سريع على الزر
       await sendAnswerCallbackQuery(callbackQuery.id, 'تم رفض المهمة ❌');
+      
+      // إشعار للإدارة
+      addNotification({
+        type: 'system',
+        title: '❌ تم رفض المهمة',
+        message: `رفض ${subscriber.firstName} ${subscriber.lastName || ''} المهمة`,
+        userId: subscriber.id
+      });
+    } else {
+      console.log(`⚠️ لم يتم العثور على الفني ${userId}`);
+      await sendAnswerCallbackQuery(callbackQuery.id, 'خطأ: لم يتم العثور على بياناتك');
     }
   }
 };
+
 const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) => {
   try {
+    console.log(`📤 إرسال رد على الزر: ${text}`);
     await fetch(`https://api.telegram.org/bot${settings.botToken}/answerCallbackQuery`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -248,6 +282,7 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
         show_alert: false
       })
     });
+    console.log(`✅ تم إرسال الرد بنجاح`);
   } catch (error) {
     console.error('❌ خطأ في الرد على callback_query:', error);
   }
@@ -353,6 +388,7 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
         // 🔥 NEW: قبول المهمة بالصيغة الجديدة
         const subscriber = subscribers.find(s => s.userId === userId);
         if (subscriber) {
+          console.log(`✅ الفني ${subscriber.firstName} قبل المهمة`);
           await handleTaskAcceptance(subscriber);
           
           // إشعار للإدارة
@@ -362,12 +398,16 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
             message: `قبل ${subscriber.firstName} ${subscriber.lastName || ''} المهمة`,
             userId: subscriber.id
           });
+        } else {
+          console.log(`⚠️ لم يتم العثور على الفني ${userId}`);
+          await sendTelegramMessage(message.chat.id, '⚠️ يجب تسجيل الدخول أولاً بإرسال /start');
         }
         
       } else if (messageText === 'غير متاح الآن' || messageText === 'Zurzeit nicht verfügbar') {
         // 🔥 NEW: رفض المهمة بالصيغة الجديدة
         const subscriber = subscribers.find(s => s.userId === userId);
         if (subscriber) {
+          console.log(`❌ الفني ${subscriber.firstName} رفض المهمة`);
           await handleTaskRejection(subscriber);
           
           // إشعار للإدارة
@@ -377,6 +417,9 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
             message: `رفض ${subscriber.firstName} ${subscriber.lastName || ''} المهمة`,
             userId: subscriber.id
           });
+        } else {
+          console.log(`⚠️ لم يتم العثور على الفني ${userId}`);
+          await sendTelegramMessage(message.chat.id, '⚠️ يجب تسجيل الدخول أولاً بإرسال /start');
         }
         
       } else {
@@ -406,12 +449,16 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
 
   // 🔥 CRITICAL: معالجة قبول المهمة - محسنة ومبسطة
   const handleTaskAcceptance = async (subscriber: Subscriber) => {
+    console.log(`🔍 البحث عن مهمة متاحة للفني ${subscriber.firstName}`);
+    
     // البحث عن آخر مهمة نشطة تم إرسالها لهذا الفني
     const availableTask = tasks.find(t => 
       t.status === 'active' && 
       !t.acceptedBy && 
       (t.type === 'group' || t.targetUsers.includes(subscriber.id))
     );
+    
+    console.log(`📋 المهام المتاحة: ${tasks.length}, المهمة الموجودة:`, availableTask?.title);
     
     if (availableTask) {
       // تحديث حالة المهمة - إضافة acceptedBy
@@ -420,6 +467,8 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
           ? { ...t, acceptedBy: subscriber.id }
           : t
       ));
+      
+      console.log(`✅ تم تحديث المهمة ${availableTask.title} - قبلها ${subscriber.firstName}`);
       
       // رد للفني
       const { t } = useTranslation(settings.language);
@@ -433,12 +482,15 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
       console.log(`✅ تم قبول المهمة ${availableTask.title} من قبل ${subscriber.firstName}`);
       
     } else {
+      console.log(`⚠️ لا توجد مهام متاحة للفني ${subscriber.firstName}`);
       await sendTelegramMessage(parseInt(subscriber.userId), 'لا توجد مهام متاحة حالياً.');
     }
   };
 
   // 🔥 CRITICAL: معالجة رفض المهمة - محسنة ومبسطة
   const handleTaskRejection = async (subscriber: Subscriber) => {
+    console.log(`🔍 البحث عن مهمة متاحة للرفض للفني ${subscriber.firstName}`);
+    
     const availableTask = tasks.find(t => 
       t.status === 'active' && 
       !t.acceptedBy && 
@@ -454,6 +506,7 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
       
       console.log(`❌ تم رفض المهمة ${availableTask.title} من قبل ${subscriber.firstName}`);
     } else {
+      console.log(`⚠️ لا توجد مهام متاحة للرفض للفني ${subscriber.firstName}`);
       await sendTelegramMessage(parseInt(subscriber.userId), 'لا توجد مهام متاحة حالياً.');
     }
   };
@@ -587,6 +640,7 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
   const sendTaskToTechnician = async (taskId: string, forceResend: boolean = false) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task || !settings.isConnected || !settings.botToken) {
+      console.log('⚠️ لا يمكن إرسال المهمة - البوت غير متصل أو المهمة غير موجودة');
       return;
     }
 
@@ -603,13 +657,62 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
       return;
     }
 
+    console.log(`📤 إرسال المهمة "${task.title}" إلى ${targetTechnicians.length} فني`);
+
     let sentCount = 0;
     
     for (const technician of targetTechnicians) {
       if (technician) {
-        // 🔥 NEW: إرسال المهمة مع الصيغة الجديدة وإضافة أزرار Yes/No
+        // 🔥 NEW: إرسال المهمة مع أزرار نعم/لا
         const { t } = useTranslation(settings.language);
-        const message = t('taskAvailable', {
+        
+        // رسالة مبسطة مع المعلومات الأساسية
+        const message = `📌 مهمة جديدة متاحة:
+
+🔧 ${task.title}
+📝 ${task.description}
+
+💰 التكلفة المتوقعة: ${task.expectedCost} ريال
+📅 تاريخ البداية: ${new Date(task.startDate).toLocaleDateString('ar')}
+⏰ تاريخ الانتهاء: ${new Date(task.endDate).toLocaleDateString('ar')}
+
+هل تريد قبول هذه المهمة؟`;
+
+        // 🔥 NEW: إضافة أزرار نعم/لا عبر Telegram Inline Keyboard
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { 
+                text: '✅ نعم - أقبل المهمة', 
+                callback_data: `accept_task_${task.id}_${technician.id}` 
+              },
+              { 
+                text: '❌ لا - غير متاح', 
+                callback_data: `reject_task_${task.id}_${technician.id}` 
+              }
+            ]
+          ]
+        };
+
+        console.log(`📱 إرسال المهمة للفني ${technician.firstName} (${technician.userId})`);
+        
+        await sendTelegramMessage(parseInt(technician.userId), message, replyMarkup);
+        sentCount++;
+        
+        // تأخير بين الرسائل لتجنب spam
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    
+    // إشعار واحد فقط
+    addNotification({
+      type: 'system',
+      title: forceResend ? '🔄 تم إعادة إرسال المهمة' : '📤 تم إرسال المهمة',
+      message: `تم ${forceResend ? 'إعادة ' : ''}إرسال المهمة "${task.title}" إلى ${sentCount} فني`,
+    });
+    
+    console.log(`✅ تم إرسال المهمة بنجاح إلى ${sentCount} فني`);
+  };
           title: task.title,
           description: task.description,
           cost: task.expectedCost.toString(),
