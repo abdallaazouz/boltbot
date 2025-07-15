@@ -713,40 +713,8 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
     
     console.log(`✅ تم إرسال المهمة بنجاح إلى ${sentCount} فني`);
   };
-          title: task.title,
-          description: task.description,
-          cost: task.expectedCost.toString(),
-          startDate: new Date(task.startDate).toLocaleDateString(settings.language === 'ar' ? 'ar' : 'de'),
-          endDate: new Date(task.endDate).toLocaleDateString(settings.language === 'ar' ? 'ar' : 'de')
-        });
 
-        // إضافة أزرار Yes/No عبر Telegram Keyboard
-        const replyMarkup = {
-          inline_keyboard: [
-            [
-              { text: 'Yes', callback_data: `accept_task_${task.id}` },
-              { text: 'No', callback_data: `reject_task_${task.id}` }
-            ]
-          ]
-        };
-
-        await sendTelegramMessage(parseInt(technician.userId), message, replyMarkup);
-        sentCount++;
-        
-        // تأخير بين الرسائل لتجنب spam
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
-    
-    // إشعار واحد فقط
-    addNotification({
-      type: 'system',
-      title: forceResend ? '🔄 تم إعادة إرسال المهمة' : '📤 تم إرسال المهمة',
-      message: `تم ${forceResend ? 'إعادة ' : ''}إرسال المهمة "${task.title}" إلى ${sentCount} فني`,
-    });
-  };
-
-// ... باقى الكود كما هو ...
+  // ... باقى الكود كما هو ...
 
   const sendInvoiceToTechnician = async (invoiceId: string) => {
     const invoice = invoices.find(i => i.id === invoiceId);
