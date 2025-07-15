@@ -211,36 +211,72 @@ catch (error) {
 
 
 const handleTelegramCallbackQuery = async (callbackQuery: any) => {
-  console.log("📥 استقبلت callback_query!", callbackQuery);
+  console.log("📥 استقبلت callback_query!", JSON.stringify(callbackQuery, null, 2));
   const userId = callbackQuery.from.id.toString();
   const data = callbackQuery.data; // قيمة callback_data من الزر
   const chatId = callbackQuery.message.chat.id;
   
   console.log(`👤 المستخدم: ${userId}, البيانات: ${data}`);
+  console.log(`📋 المشتركين الحاليين: ${subscribers.length}`);
+  console.log(`🔍 البحث عن المستخدم ${userId} في المشتركين...`);
 
   // قبول المهمة
   if (data.startsWith('accept_task_')) {
     const [, , taskId, technicianId] = data.split('_');
     console.log(`✅ محاولة قبول المهمة ${taskId} من الفني ${technicianId}`);
     
+    // البحث في المشتركين الحاليين
     const subscriber = subscribers.find(s => s.userId === userId);
+    console.log(`🔍 نتيجة البحث عن الفني:`, subscriber ? `${subscriber.firstName} (${subscriber.id})` : 'غير موجود');
+    
     if (subscriber) {
       console.log(`👤 تم العثور على الفني: ${subscriber.firstName}`);
-      await handleTaskAcceptance(subscriber);
+      
+      // البحث عن المهمة
+      const task = tasks.find(t => t.id === taskId);
+      console.log(`📋 البحث عن المهمة ${taskId}:`, task ? task.title : 'غير موجودة');
+      
+      if (task) {
+        // تحديث حالة المهمة - إضافة acceptedBy
+        setTasks(prev => prev.map(t => 
+          t.id === taskId 
+            ? { ...t, acceptedBy: subscriber.id }
+            : t
+        ));
+        
+        console.log(`✅ تم تحديث المهمة ${task.title} - قبلها ${subscriber.firstName}`);
+        
+        // رد للفني
+        const acceptText = `✅ رائع! تم قبول المهمة بنجاح
+
+🔧 ${task.title}
+💰 التكلفة: ${task.expectedCost} ريال
+
+📍 سيتم إرسال موقع المهمة قريباً من الإدارة.`;
+        
+        await sendTelegramMessage(parseInt(subscriber.userId), acceptText);
+        
+        // إشعار للإدارة
+        addNotification({
+          type: 'task_accepted',
+          title: '✅ تم قبول المهمة',
+          message: `قبل ${subscriber.firstName} ${subscriber.lastName || ''} المهمة "${task.title}"`,
+          userId: subscriber.id
+        });
+        
+        console.log(`✅ تم قبول المهمة ${task.title} من قبل ${subscriber.firstName}`);
+      } else {
+        console.log(`⚠️ المهمة ${taskId} غير موجودة`);
+        await sendTelegramMessage(parseInt(subscriber.userId), '⚠️ المهمة غير موجودة أو منتهية الصلاحية');
+      }
 
       // رد سريع على الزر
       await sendAnswerCallbackQuery(callbackQuery.id, 'تم قبول المهمة ✅');
-      
-      // إشعار للإدارة
-      addNotification({
-        type: 'task_accepted',
-        title: '✅ تم قبول المهمة',
-        message: `قبل ${subscriber.firstName} ${subscriber.lastName || ''} المهمة`,
-        userId: subscriber.id
-      });
     } else {
       console.log(`⚠️ لم يتم العثور على الفني ${userId}`);
+      console.log(`📋 قائمة المشتركين الحالية:`, subscribers.map(s => `${s.firstName} (${s.userId})`));
       await sendAnswerCallbackQuery(callbackQuery.id, 'خطأ: لم يتم العثور على بياناتك');
+      await sendTelegramMessage(chatId, '⚠️ يجب تسجيل الدخول أولاً بإرسال /start');
     }
 
   // رفض المهمة
@@ -249,24 +285,51 @@ const handleTelegramCallbackQuery = async (callbackQuery: any) => {
     console.log(`❌ محاولة رفض المهمة ${taskId} من الفني ${technicianId}`);
     
     const subscriber = subscribers.find(s => s.userId === userId);
+    console.log(`🔍 نتيجة البحث عن الفني:`, subscriber ? `${subscriber.firstName} (${subscriber.id})` : 'غير موجود');
+    
     if (subscriber) {
       console.log(`👤 تم العثور على الفني: ${subscriber.firstName}`);
-      await handleTaskRejection(subscriber);
+      
+      // البحث عن المهمة
+      const task = tasks.find(t => t.id === taskId);
+      console.log(`📋 البحث عن المهمة ${taskId}:`, task ? task.title : 'غير موجودة');
+      
+      if (task) {
+        // رد للفني
+        const rejectText = `❌ لا مشكلة!
+
+🔧 ${task.title}
+
+💪 سنرسل لك مهمة أخرى قريباً!
+🔔 ابق متابعاً للإشعارات.`;
+        
+        await sendTelegramMessage(parseInt(subscriber.userId), rejectText);
+        
+        // إشعار للإدارة
+        addNotification({
+          type: 'system',
+          title: '❌ تم رفض المهمة',
+          message: `رفض ${subscriber.firstName} ${subscriber.lastName || ''} المهمة "${task.title}"`,
+          userId: subscriber.id
+        });
+        
+        console.log(`❌ تم رفض المهمة ${task.title} من قبل ${subscriber.firstName}`);
+      } else {
+        console.log(`⚠️ المهمة ${taskId} غير موجودة`);
+        await sendTelegramMessage(parseInt(subscriber.userId), '⚠️ المهمة غير موجودة أو منتهية الصلاحية');
+      }
 
       // رد سريع على الزر
       await sendAnswerCallbackQuery(callbackQuery.id, 'تم رفض المهمة ❌');
-      
-      // إشعار للإدارة
-      addNotification({
-        type: 'system',
-        title: '❌ تم رفض المهمة',
-        message: `رفض ${subscriber.firstName} ${subscriber.lastName || ''} المهمة`,
-        userId: subscriber.id
-      });
     } else {
       console.log(`⚠️ لم يتم العثور على الفني ${userId}`);
+      console.log(`📋 قائمة المشتركين الحالية:`, subscribers.map(s => `${s.firstName} (${s.userId})`));
       await sendAnswerCallbackQuery(callbackQuery.id, 'خطأ: لم يتم العثور على بياناتك');
+      await sendTelegramMessage(chatId, '⚠️ يجب تسجيل الدخول أولاً بإرسال /start');
     }
+  } else {
+    console.log(`⚠️ callback_data غير معروف: ${data}`);
+    await sendAnswerCallbackQuery(callbackQuery.id, 'خطأ: إجراء غير معروف');
   }
 };
 
@@ -513,6 +576,12 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
 
   const sendTelegramMessage = async (chatId: number, text: string, replyMarkup?: any) => {
     try {
+      console.log(`📤 محاولة إرسال رسالة إلى ${chatId}`);
+      console.log(`📝 نص الرسالة: ${text.substring(0, 100)}...`);
+      if (replyMarkup) {
+        console.log(`🔘 مع أزرار:`, JSON.stringify(replyMarkup, null, 2));
+      }
+      
       const response = await fetch(`https://api.telegram.org/bot${settings.botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -526,7 +595,7 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
       
       const data = await response.json();
       if (data.ok) {
-        console.log('✅ تم إرسال الرسالة بنجاح');
+        console.log('✅ تم إرسال الرسالة بنجاح:', data.result.message_id);
         return data.result;
       } else {
         if (data.description === 'Forbidden: bot was blocked by the user') {
@@ -541,6 +610,7 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
           console.log(`⚠️ المستخدم ${chatId} حظر البوت`);
         } else {
           console.error('❌ فشل إرسال الرسالة:', data.description);
+          console.error('📋 تفاصيل الخطأ:', JSON.stringify(data, null, 2));
         }
       }
     } catch (error) {
@@ -694,9 +764,11 @@ const sendAnswerCallbackQuery = async (callbackQueryId: string, text: string) =>
           ]
         };
 
-        console.log(`📱 إرسال المهمة للفني ${technician.firstName} (${technician.userId})`);
+        console.log(`📱 إرسال المهمة للفني ${technician.firstName} (${technician.userId}) مع الأزرار`);
+        console.log(`🔘 أزرار المهمة:`, JSON.stringify(replyMarkup, null, 2));
         
-        await sendTelegramMessage(parseInt(technician.userId), message, replyMarkup);
+        const result = await sendTelegramMessage(parseInt(technician.userId), message, replyMarkup);
+        console.log(`📤 نتيجة إرسال المهمة:`, result ? 'نجح' : 'فشل');
         sentCount++;
         
         // تأخير بين الرسائل لتجنب spam
